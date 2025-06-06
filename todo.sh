@@ -4,14 +4,6 @@ _______________________________ bash script :
 cat << 'EOF' > todo.sh
 #!/bin/bash
 
-# Check if script is already running
-if [ -f "/tmp/todo_script.lock" ]; then
-    echo -e "\033[1;31mError: Script is already running. Please close the other instance.\033[0m"
-    exit 1
-fi
-# Create lock file
-touch /tmp/todo_script.lock
-
 # File to store tasks
 TODO_FILE="todo.txt"
 
@@ -25,17 +17,17 @@ add_task() {
     echo "Enter the task:"
     read -r task
     if [ -z "$task" ]; then
-        echo -e "\033[1;31mError: Task cannot be empty.\033[0m"
+        echo "Error: Task cannot be empty."
     else
-        echo "$task" >> "$TODO_FILE"
-        echo -e "\033[1;32mTask added: $task\033[0m"
+        echo "[✘] $task" >> "$TODO_FILE"
+        echo "Task added: $task"
     fi
 }
 
 # Function to view all tasks
 view_tasks() {
     if [ ! -s "$TODO_FILE" ]; then
-        echo -e "\033[1;31mNo tasks found.\033[0m"
+        echo "No tasks found."
     else
         echo "Your To-Do List:"
         nl -w2 -s'. ' "$TODO_FILE"
@@ -51,12 +43,32 @@ delete_task() {
         if [[ "$task_num" =~ ^[0-9]+$ ]]; then
             if [ "$task_num" -gt 0 ] && [ "$task_num" -le "$(wc -l < "$TODO_FILE")" ]; then
                 sed -i "${task_num}d" "$TODO_FILE"
-                echo -e "\033[1;32mTask $task_num deleted.\033[0m"
+                echo "Task $task_num deleted."
             else
-                echo -e "\033[1;31mError: Invalid task number.\033[0m"
+                echo "Error: Invalid task number."
             fi
         else
-            echo -e "\033[1;31mError: Please enter a valid number.\033[0m"
+            echo "Error: Please enter a valid number."
+        fi
+    fi
+}
+
+# Function to mark task as done
+mark_done() {
+    view_tasks
+    if [ -s "$TODO_FILE" ]; then
+        echo "Enter the task number to mark as done:"
+        read -r task_num
+        if [[ "$task_num" =~ ^[0-9]+$ ]]; then
+            if [ "$task_num" -gt 0 ] && [ "$task_num" -le "$(wc -l < "$TODO_FILE")" ]; then
+                task_text=$(sed -n "${task_num}p" "$TODO_FILE" | sed 's/^\[.\] //')
+                sed -i "${task_num}s/.*/[✔] $task_text/" "$TODO_FILE"
+                echo "Task $task_num marked as done."
+            else
+                echo "Error: Invalid task number."
+            fi
+        else
+            echo "Error: Please enter a valid number."
         fi
     fi
 }
@@ -64,38 +76,43 @@ delete_task() {
 # Function to clear all tasks
 clear_tasks() {
     > "$TODO_FILE"
-    echo -e "\033[1;32mAll tasks cleared.\033[0m"
+    echo "All tasks cleared."
 }
 
-# Clean up lock file on exit
-trap 'rm -f /tmp/todo_script.lock' EXIT
 
 # Main menu
 while true; do
-    clear
-    echo -e "\n\033[1;34mTo-Do List Menu:\033[0m"
+    # clear
+    echo
+    echo "To-Do List Menu:"
     echo "1. Add a task"
     echo "2. View all tasks"
     echo "3. Delete a task"
-    echo "4. Clear all tasks"
-    echo "5. Exit"
-    echo "Choose an option (1-5):"
+    echo "4. Mark Done"
+    echo "5. Clear all tasks"
+    echo "6. Exit"
+    echo "Choose an option (1-6):"
     read -r choice
 
     case "$choice" in
         1) add_task ;;
         2) view_tasks ;;
         3) delete_task ;;
-        4) clear_tasks ;;
-        5) echo -e "\033[1;32mGoodbye!\033[0m"; exit 0 ;;
-        *) echo -e "\033[1;31mInvalid option. Please choose 1-5.\033[0m" ;;
+        4) mark_done ;;
+        5) clear_tasks ;;
+        6) echo "Goodbye!"; exit 0 ;;
+        *) echo "Invalid option. Please choose 1-6." ;;
     esac
-    echo -e "\nPress Enter to continue..."
+    echo
+    echo "Press Enter to continue..."
     read -r
 done
+
+# chmod +x todo.sh
+# ./todo.sh
+
 EOF
 _______________________
-
 
 # Make it executable : chmod +x todo.sh
 # run : ./todo.sh
