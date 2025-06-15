@@ -1,21 +1,19 @@
 # making folder : mkdir todo-project
 
 _______________________________ bash script : 
-cat << 'EOF' > todo.sh
+# cat << 'EOF' > todo.sh
 #!/bin/bash
 
 # File to store tasks
 TODO_FILE="todo.txt"
 
 # Create todo.txt if it doesn't exist
-if [ ! -f "$TODO_FILE" ]; then
-    touch "$TODO_FILE"
-fi
+touch "$TODO_FILE"
 
 # Function to add a task
 add_task() {
     echo "Enter the task:"
-    read -r task
+    read task
     if [ -z "$task" ]; then
         echo "Error: Task cannot be empty."
     else
@@ -24,54 +22,65 @@ add_task() {
     fi
 }
 
+
 # Function to view all tasks
 view_tasks() {
-    if [ ! -s "$TODO_FILE" ]; then
-        echo "No tasks found."
-    else
+    if [ -s "$TODO_FILE" ]; then
         echo "Your To-Do List:"
-        nl -w2 -s'. ' "$TODO_FILE"
+        nl "$TODO_FILE"
+    else
+        echo "No tasks found."
     fi
 }
+
 
 # Function to delete a task
 delete_task() {
     view_tasks
-    if [ -s "$TODO_FILE" ]; then
-        echo "Enter the task number to delete:"
-        read -r task_num
-        if [[ "$task_num" =~ ^[0-9]+$ ]]; then
-            if [ "$task_num" -gt 0 ] && [ "$task_num" -le "$(wc -l < "$TODO_FILE")" ]; then
-                sed -i "${task_num}d" "$TODO_FILE"
-                echo "Task $task_num deleted."
-            else
-                echo "Error: Invalid task number."
-            fi
-        else
-            echo "Error: Please enter a valid number."
-        fi
+    total_tasks=$(wc -l < "$TODO_FILE")
+
+    echo "Enter task number to delete:"
+    read task_num
+
+    if [ "$total_tasks" -ge 1 ] && [ "$task_num" -ge 1 ] && [ "$task_num" -le "$total_tasks" ]; then
+        sed "${task_num}d" "$TODO_FILE" > tmp
+        mv tmp "$TODO_FILE"
+        echo "Deleted task $task_num"
+    else
+        echo "Error: invalid choice"
     fi
 }
+
 
 # Function to mark task as done
 mark_done() {
     view_tasks
-    if [ -s "$TODO_FILE" ]; then
-        echo "Enter the task number to mark as done:"
-        read -r task_num
-        if [[ "$task_num" =~ ^[0-9]+$ ]]; then
-            if [ "$task_num" -gt 0 ] && [ "$task_num" -le "$(wc -l < "$TODO_FILE")" ]; then
-                task_text=$(sed -n "${task_num}p" "$TODO_FILE" | sed 's/^\[.\] //')
-                sed -i "${task_num}s/.*/[✔] $task_text/" "$TODO_FILE"
-                echo "Task $task_num marked as done."
+    total_tasks=$(wc -l < "$TODO_FILE")
+
+    echo "Enter the task number to mark as done:"
+    read task_num
+
+    if [ "$task_num" -ge 1 ] && [ "$task_num" -le "$total_tasks" ]; then
+        count=0
+        > tmp
+        while read -r line; do
+            count=$((count + 1))
+            if [ "$count" -eq "$task_num" ]; then
+                # Mark task done by replacing first 4 chars with [✔]
+                echo "[✔] ${line:4}" >> tmp
             else
-                echo "Error: Invalid task number."
+                echo "$line" >> tmp
             fi
-        else
-            echo "Error: Please enter a valid number."
-        fi
+        done < "$TODO_FILE"
+
+        mv tmp "$TODO_FILE"
+        echo "Task $task_num marked as done."
+    else
+        echo "Error: Invalid task number."
     fi
 }
+
+
 
 # Function to clear all tasks
 clear_tasks() {
@@ -82,7 +91,7 @@ clear_tasks() {
 
 # Main menu
 while true; do
-    # clear
+    clear
     echo
     echo "To-Do List Menu:"
     echo "1. Add a task"
@@ -92,7 +101,7 @@ while true; do
     echo "5. Clear all tasks"
     echo "6. Exit"
     echo "Choose an option (1-6):"
-    read -r choice
+    read choice
 
     case "$choice" in
         1) add_task ;;
@@ -105,14 +114,14 @@ while true; do
     esac
     echo
     echo "Press Enter to continue..."
-    read -r
+    read
 done
 
 # chmod +x todo.sh
 # ./todo.sh
 
-EOF
-_______________________
+# EOF
+# _______________________
 
 # Make it executable : chmod +x todo.sh
 # run : ./todo.sh
